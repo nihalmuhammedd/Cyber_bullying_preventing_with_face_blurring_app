@@ -1,0 +1,70 @@
+import json
+from .predictionfile_dt import predict_post
+from datetime import datetime
+from django.core.files.storage import FileSystemStorage
+from django.db.models import Q
+from django.http import HttpResponse
+from django.http.response import JsonResponse
+from django.shortcuts import render
+from .encode_faces import enf
+from .recognize_face import rec_face_image,rec_face_image1
+# Create your views here.
+from theftdetection.models import *
+import cv2
+face_cascade = cv2.CascadeClassifier(r'C:\Users\SSD\Desktop\cyberbullying\identitytheft\theftdetection\haarcascade_frontalface_default.xml')
+
+def login(request):
+    ob=user_table.objects.all()
+    r=[]
+    for i in ob:
+        r.append([i.id,r"C:\Users\SSD\Desktop\cyberbullying\identitytheft\media/"+str(i.image)])
+    enf(r)
+    return render(request,"index.html")
+
+
+def login_post(request):
+    un=request.POST['textfield']
+    pswd=request.POST['textfield2']
+    try:
+        o=login_table.objects.get(username=un,password=pswd)
+        if o.type =='admin':
+            return HttpResponse('''<script>alert("welcome");window.location="/admin_home"</script>''')
+        else:
+            return HttpResponse('''<script>alert("invalid user");window.location="/"</script>''')
+    except:
+        return HttpResponse('''<script>alert("invalid username password");window.location="/"</script>''')
+
+
+def admin_home(request):
+    return render(request,"adminindex.html")
+
+
+def block_user(request,id):
+    ob=login_table.objects.get(id=id)
+    ob.type='blocked'
+    ob.save()
+    return HttpResponse('''<script>alert("blocked Successfully");window.location="/block_and_unblock"</script>''')
+
+
+def unblock_user(request,id):
+    ob=login_table.objects.get(id=id)
+    ob.type='user'
+    ob.save()
+    return HttpResponse('''<script>alert("unblocked successfully");window.location="/block_and_unblock"</script>''')
+
+
+def block_and_unblock(request):
+    res1=user_table.objects.all()
+    return render(request,"block& unblock.html",{"data":res1})
+
+
+def send_reply(request,id):
+    request.session['Cid']=id
+    return render(request,"sendreply.html")
+
+def send_reply_post(request):
+    rep=request.POST['textfield']
+    ob=complaint_table.objects.get(id=request.session['Cid'])
+    ob.reply=rep
+    ob.save()
+    return HttpResponse('''<script>alert("sended");window.location="/view_complaint_and_sendreply"</script>''')
